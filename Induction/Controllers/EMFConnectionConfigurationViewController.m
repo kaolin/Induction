@@ -28,7 +28,7 @@ static NSString * DBURLStringFromComponents(NSString *scheme, NSString *host, NS
     if (user && [user length] > 0) {
         [mutableURLString appendFormat:@"%@", user];
         if (password && [password length] > 0) {
-            [mutableURLString appendFormat:@":%@", password];
+				    [mutableURLString appendFormat:@":%@", [password stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
         }
         [mutableURLString appendString:@"@"];
     }
@@ -77,7 +77,7 @@ static NSString * DBURLStringFromComponents(NSString *scheme, NSString *host, NS
     dispatch_once(&onceToken, ^{
         _illegalDatabaseParameterCharacterSet = [NSCharacterSet characterSetWithCharactersInString:@" ,:;@!#$%&^'()[]{}\"\\/|"];
     });
-    
+
     return [partialString rangeOfCharacterFromSet:_illegalDatabaseParameterCharacterSet].location == NSNotFound;
 }
 
@@ -246,11 +246,13 @@ static NSString * DBURLStringFromComponents(NSString *scheme, NSString *host, NS
         NSString *password = [url password];
         if (!password) {
             password = [self.passwordField objectValue];
-        }
-        
+        } else {
+            password = [password stringByRemovingPercentEncoding];
+				}
+      
         self.connectionURL = [NSURL URLWithString:DBURLStringFromComponents(scheme, [url host], [url user], password, [url port], [url path])];
     } else {
-        self.connectionURL = [NSURL URLWithString:DBURLStringFromComponents([[self.schemePopupButton selectedCell] title], [self.hostnameField stringValue], [self.usernameField stringValue], [self.passwordField stringValue], [NSNumber numberWithInteger:[self.portField integerValue]], [self.databaseField stringValue])];
+        self.connectionURL = [NSURL URLWithString:DBURLStringFromComponents([[self.schemePopupButton selectedCell] title], [self.hostnameField stringValue], [self.usernameField stringValue], [[self.passwordField stringValue] stringByRemovingPercentEncoding], [NSNumber numberWithInteger:[self.portField integerValue]], [self.databaseField stringValue])];
     }
 }
 
@@ -262,7 +264,7 @@ static NSString * DBURLStringFromComponents(NSString *scheme, NSString *host, NS
         
         [self.schemePopupButton selectItemWithTitle:[url scheme]];
         
-        self.connectionURL = [NSURL URLWithString:DBURLStringFromComponents([self.schemePopupButton titleOfSelectedItem], [self.hostnameField stringValue], [self.usernameField stringValue], [self.passwordField stringValue], [NSNumber numberWithInteger:[self.portField integerValue]], [self.databaseField stringValue])];
+        self.connectionURL = [NSURL URLWithString:DBURLStringFromComponents([self.schemePopupButton titleOfSelectedItem], [self.hostnameField stringValue], [self.usernameField stringValue], [[self.passwordField stringValue] stringByRemovingPercentEncoding], [NSNumber numberWithInteger:[self.portField integerValue]], [self.databaseField stringValue])];
         
         if ([[url scheme] isEqualToString:@"postgres"]) {
             [[self.portField cell] setPlaceholderString:@"5432"];
